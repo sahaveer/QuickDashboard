@@ -1,0 +1,96 @@
+{
+    "app": {
+        "title": "Piano Deck - Senior Officers Dashboard",
+        "always_on_top": true,
+        "sound_enabled": true,
+        "sound_volume": 100,
+        "dock_height": 165,
+        "is_collapsed": false,
+        "theme": "executive_gold"
+    },
+    "telegram": {
+        "bot_token": "",
+        "chat_id": "",
+        "auto_send": true
+    },
+    "whatsapp": {
+        "default_phone": "",
+        "default_message": "Snapshot shared from Senior Officer Dashboard"
+    },
+    "workspace": {
+        "urls": [
+            "https://finance.yahoo.com",
+            "https://news.google.com"
+        ],
+        "apps": [
+            "calc.exe",
+            "notepad.exe"
+        ]
+    },
+    "autologin": {
+        "portal_name": "Executive Portal",
+        "url": "https://google.com",
+        "username": "executive.officer@domain.com",
+        "password": "",
+        "auto_copy_password": true
+    },
+    "music": {
+        "active_index": 0,
+        "stations": [
+            {
+                "title": "Executive Focus Lofi",
+                "type": "web",
+                "url": "https://www.youtube.com/watch?v=jfKfPfyJRdk"
+            },
+            {
+                "title": "Classical Masterpieces (Chopin & Mozart)",
+                "type": "web",
+                "url": "https://www.youtube.com/watch?v=4Tr0ovkx_-8"
+            },
+            {
+                "title": "Deep Work Ambient Flow",
+                "type": "web",
+                "url": "https://www.youtube.com/watch?v=WPni755-Krg"
+            },
+            {
+                "title": "Gentle Nature & Rain Meditation",
+                "type": "web",
+                "url": "https://www.youtube.com/watch?v=mPZkdNFkNps"
+            }
+        ]
+    },
+    "keys": [
+        {
+            "id": "key_clean",
+            "note": 60,
+            "note_name": "C4",
+            "title": "PURGE & CLEAN",
+            "subtitle": "Recycle Bin & Temp Cache",
+            "icon": "🧹",
+            "action": "clean_system",
+            "badge": "1-Click"
+        },
+        {
+            "id": "key_snap",
+            "note": 62,
+            "note_name": "D4",
+            "title": "SNAPSHOT",
+            "subtitle": "Save Image & Copy to Clip",
+            "icon": "📸",
+            "action": "screenshot_titled",
+            "badge": "Smart Snap"
+        },
+        {
+            "id": "key_battery_checks",
+            "note": 64,
+            "note_name": "E4",
+            "title": "BATTERY CHECKS",
+            "subtitle": "PMS Routines",
+            "icon": "📋",
+            "action": "paste_text",
+            "badge": "Snippet",
+            "text": "All checks carried out as per instruction \nAll found satisfactory",
+            "auto_paste": true
+        }
+    ]
+}

@@ -1,0 +1,195 @@
+{
+    "active_profile_id": "senior_officer",
+    "profiles": {
+        "senior_officer": {
+            "name": "Senior Officer",
+            "icon": "👤",
+            "role": "Chief / Executive",
+            "keys": [
+                {
+                    "id": "key_clean",
+                    "note": 60,
+                    "note_name": "C4",
+                    "title": "PURGE & CLEAN",
+                    "subtitle": "Recycle Bin & Cache",
+                    "icon": "🧹",
+                    "action": "clean_system",
+                    "badge": "1-Click"
+                },
+                {
+                    "id": "key_snap",
+                    "note": 62,
+                    "note_name": "D4",
+                    "title": "SNAPSHOT",
+                    "subtitle": "Smart Snip & Save",
+                    "icon": "📸",
+                    "action": "screenshot_titled",
+                    "badge": "Smart Snap"
+                },
+                {
+                    "id": "key_approval",
+                    "note": 64,
+                    "note_name": "E4",
+                    "title": "OFFICER APPROVAL",
+                    "subtitle": "Official Memo",
+                    "icon": "📋",
+                    "action": "paste_text",
+                    "badge": "Snippet",
+                    "text": "Approved. Please process as per official policy and record in the minutes.",
+                    "auto_paste": true
+                },
+                {
+                    "id": "key_privacy",
+                    "note": 65,
+                    "note_name": "F4",
+                    "title": "PRIVACY SHIELD",
+                    "subtitle": "Boss Key & Mute",
+                    "icon": "🛡️",
+                    "action": "privacy_shield",
+                    "badge": "Boss Key"
+                }
+            ]
+        },
+        "finance_officer": {
+            "name": "Finance & Accounts",
+            "icon": "💼",
+            "role": "Financial Management",
+            "keys": [
+                {
+                    "id": "key_excel_kill",
+                    "note": 60,
+                    "note_name": "C4",
+                    "title": "KILL EXCEL",
+                    "subtitle": "Unfreeze Spreadsheets",
+                    "icon": "⚡",
+                    "action": "kill_tasks",
+                    "badge": "Rescue",
+                    "text": "excel.exe"
+                },
+                {
+                    "id": "key_snip_fin",
+                    "note": 62,
+                    "note_name": "D4",
+                    "title": "SNIP AUDIT",
+                    "subtitle": "Area Snipping Tool",
+                    "icon": "✂️",
+                    "action": "screenshot_titled",
+                    "badge": "Area Snip"
+                },
+                {
+                    "id": "key_payment_approved",
+                    "note": 64,
+                    "note_name": "E4",
+                    "title": "PAYMENT OK",
+                    "subtitle": "Disbursement Memo",
+                    "icon": "💰",
+                    "action": "paste_text",
+                    "badge": "Snippet",
+                    "text": "Invoice calculations and supporting vouchers verified. Approved for disbursement.",
+                    "auto_paste": true
+                },
+                {
+                    "id": "key_portal",
+                    "note": 65,
+                    "note_name": "F4",
+                    "title": "ERP PORTAL",
+                    "subtitle": "Finance Dashboard",
+                    "icon": "🌐",
+                    "action": "custom_url",
+                    "badge": "Web Link",
+                    "text": "https://finance.yahoo.com"
+                }
+            ]
+        },
+        "executive_assistant": {
+            "name": "Executive Assistant",
+            "icon": "👔",
+            "role": "Secretariat / PA",
+            "keys": [
+                {
+                    "id": "key_agenda",
+                    "note": 60,
+                    "note_name": "C4",
+                    "title": "MEETING AGENDA",
+                    "subtitle": "Insert Meeting Header",
+                    "icon": "📅",
+                    "action": "paste_text",
+                    "badge": "Snippet",
+                    "text": "MEETING DOSSIER\nDate: [Date]\nAttendees: [Names]\nAgenda: 1. Review 2. Decisions 3. Next Steps",
+                    "auto_paste": true
+                },
+                {
+                    "id": "key_dispatch",
+                    "note": 62,
+                    "note_name": "D4",
+                    "title": "DISPATCH",
+                    "subtitle": "WhatsApp / TG Share",
+                    "icon": "📤",
+                    "action": "dispatch_screenshot",
+                    "badge": "Direct Share"
+                },
+                {
+                    "id": "key_clip_hist",
+                    "note": 64,
+                    "note_name": "E4",
+                    "title": "CLIPBOARD HIST",
+                    "subtitle": "View Past Copies",
+                    "icon": "📋",
+                    "action": "shortcut",
+                    "badge": "Win+V",
+                    "text": "win+v"
+                },
+                {
+                    "id": "key_clean",
+                    "note": 65,
+                    "note_name": "F4",
+                    "title": "PURGE CACHE",
+                    "subtitle": "Clean Temp Files",
+                    "icon": "🧹",
+                    "action": "clean_system",
+                    "badge": "1-Click"
+                }
+            ]
+        },
+        "legal_compliance": {
+            "name": "Legal & Compliance",
+            "icon": "⚖️",
+            "role": "Legal Advisory",
+            "keys": [
+                {
+                    "id": "key_legal_vetted",
+                    "note": 60,
+                    "note_name": "C4",
+                    "title": "LEGAL VETTING",
+                    "subtitle": "Compliance Clause",
+                    "icon": "⚖️",
+                    "action": "paste_text",
+                    "badge": "Snippet",
+                    "text": "Reviewed and legally vetted. In full compliance with regulatory statutory mandates.",
+                    "auto_paste": true
+                },
+                {
+                    "id": "key_lock",
+                    "note": 62,
+                    "note_name": "D4",
+                    "title": "LOCK PC",
+                    "subtitle": "Confidentiality Lock",
+                    "icon": "🔒",
+                    "action": "shortcut",
+                    "badge": "Win+L",
+                    "text": "win+l"
+                },
+                {
+                    "id": "key_snip",
+                    "note": 64,
+                    "note_name": "E4",
+                    "title": "SNIP CLAUSE",
+                    "subtitle": "Capture Contract Text",
+                    "icon": "✂️",
+                    "action": "screenshot_titled",
+                    "badge": "Area Snip"
+                }
+            ]
+        }
+    }
+}
