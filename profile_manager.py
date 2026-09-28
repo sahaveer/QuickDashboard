@@ -1,8 +1,14 @@
 import os
+import sys
 import json
 import logging
 
-PROFILES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "profiles.json")
+def get_base_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+PROFILES_FILE = os.path.join(get_base_dir(), "profiles.json")
 
 DEFAULT_PROFILES = {
     "active_profile_id": "senior_officer",

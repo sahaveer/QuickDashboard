@@ -1,8 +1,14 @@
 import os
+import sys
 import json
 import logging
 
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+def get_base_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+CONFIG_FILE = os.path.join(get_base_dir(), "config.json")
 
 DEFAULT_CONFIG = {
     "app": {
