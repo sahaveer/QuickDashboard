@@ -103,8 +103,8 @@ Traditional desktop shortcuts are cluttered, easy to misclick, and lack tactile 
 1. Open **PowerShell** or **Command Prompt** (`Win + R` → type `powershell` → Enter).
 2. Clone the repository to your desired folder:
    ```powershell
-   git clone https://github.com/your-username/piano-deck-dashboard.git
-   cd "piano-deck-dashboard"
+   git clone https://github.com/sahaveer/QuickDashboard.git
+   cd "QuickDashboard"
    ```
 
 ---
