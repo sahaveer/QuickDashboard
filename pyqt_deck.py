@@ -5,6 +5,8 @@ from ctypes import wintypes
 import threading
 import time
 import webbrowser
+import subprocess
+import logging
 
 from PyQt6 import QtWidgets, QtCore, QtGui
 
@@ -582,6 +584,8 @@ class PyQtPianoDeck(QtWidgets.QWidget):
             self._action_dispatch()
         elif action == "kill_tasks":
             self._action_kill_tasks(key_cfg)
+        elif action in ("launch_app", "run_script", "launch_batch", "launch_program"):
+            self._action_launch_app(key_cfg)
         elif action == "custom_url":
             self._action_custom_url(key_cfg)
         elif action == "toggle_music":
@@ -685,12 +689,63 @@ class PyQtPianoDeck(QtWidgets.QWidget):
         targets = key_cfg.get("text", "")
         threading.Thread(target=lambda: kill_hung_processes(targets), daemon=True).start()
 
+    def _action_launch_app(self, key_cfg):
+        target_raw = key_cfg.get("text", "").strip()
+        if not target_raw:
+            return
+
+        def _worker():
+            target_expanded = os.path.expandvars(target_raw).strip()
+            target_clean = target_expanded.strip('"').strip("'")
+            work_dir = os.path.dirname(target_clean) if os.path.exists(target_clean) else None
+
+            # 1. Existing file or batch script on disk (.bat, .cmd, .exe, .lnk, etc.)
+            if os.path.exists(target_clean):
+                if target_clean.lower().endswith(('.bat', '.cmd')):
+                    try:
+                        # Launch batch file in its folder via cmd.exe start
+                        subprocess.Popen(f'cmd.exe /c start "" "{target_clean}"', shell=True, cwd=work_dir)
+                        return
+                    except Exception as e:
+                        logging.warning(f"cmd.exe start failed for {target_clean}: {e}")
+
+                try:
+                    os.startfile(target_clean, cwd=work_dir)
+                    return
+                except Exception as e:
+                    logging.warning(f"os.startfile failed for {target_clean}: {e}")
+
+            # 2. Command with arguments or registered system binary (e.g. calc.exe, notepad.exe, etc.)
+            try:
+                subprocess.Popen(target_expanded, shell=True, cwd=work_dir)
+            except Exception as e:
+                logging.error(f"Failed to launch application or script '{target_expanded}': {e}")
+
+        threading.Thread(target=_worker, daemon=True).start()
+
     def _action_custom_url(self, key_cfg):
-        url = key_cfg.get("text", "").strip()
-        if url:
-            if not url.startswith("http://") and not url.startswith("https://"):
-                url = "https://" + url
-            webbrowser.open_new_tab(url)
+        val = key_cfg.get("text", "").strip()
+        if not val:
+            return
+
+        val_clean = val.strip('"').strip("'")
+        # Smart detection: Is it actually an application, batch file, script, or local path?
+        is_local_target = (
+            val_clean.lower().endswith(('.bat', '.cmd', '.exe', '.lnk', '.ps1', '.py', '.vbs', '.msi'))
+            or os.path.exists(val_clean)
+            or (len(val_clean) > 2 and val_clean[1] == ':' and '\\' in val_clean)
+            or val_clean.startswith('\\\\')
+            or val_clean.startswith('%')
+        )
+        if is_local_target:
+            self._action_launch_app(key_cfg)
+            return
+
+        # It's a genuine web URL
+        url = val
+        if not url.startswith("http://") and not url.startswith("https://"):
+            url = "https://" + url
+        webbrowser.open_new_tab(url)
 
     def _action_music(self):
         self.music.toggle()

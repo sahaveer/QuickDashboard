@@ -1,3 +1,4 @@
+import os
 from PyQt6 import QtWidgets, QtCore, QtGui
 import win32clipboard
 from actions.shortcuts import TOP_50_SHORTCUTS
@@ -266,7 +267,8 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
 
         self.cbo_custom_type = QtWidgets.QComboBox()
         self.custom_actions = [
-            ("custom_url", "🌐 Open Website / URL"),
+            ("launch_app", "🚀 Launch App / Run Script (.bat, .exe, .cmd)"),
+            ("custom_url", "🌐 Open Website / URL in Browser"),
             ("kill_tasks", "⚡ Kill Hung Processes (Excel, Chrome)"),
             ("clean_system", "🧹 Purge Recycle Bin & Cache"),
             ("privacy_shield", "🛡️ Privacy Shield (Boss Key & Mute)"),
@@ -274,17 +276,103 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
         ]
         for act, name in self.custom_actions:
             self.cbo_custom_type.addItem(name, act)
+        self.cbo_custom_type.currentIndexChanged.connect(self._on_custom_type_changed)
         layout.addWidget(self.cbo_custom_type)
 
-        lbl_param = QtWidgets.QLabel("Target URL, Process Name, or Parameter:")
-        lbl_param.setStyleSheet("font-size: 11px; font-weight: bold; color: #CCCCCC; margin-top: 6px;")
-        layout.addWidget(lbl_param)
+        self.lbl_param = QtWidgets.QLabel("Target Application Path, Batch File (.bat), or URL:")
+        self.lbl_param.setStyleSheet("font-size: 11px; font-weight: bold; color: #CCCCCC; margin-top: 6px;")
+        layout.addWidget(self.lbl_param)
 
-        init_param = self.existing_key.get("text", "https://finance.yahoo.com") if self.existing_key else "https://finance.yahoo.com"
+        param_row = QtWidgets.QHBoxLayout()
+        init_param = self.existing_key.get("text", "") if self.existing_key else ""
         self.e_custom_param = QtWidgets.QLineEdit(init_param)
+        self.e_custom_param.setPlaceholderText("e.g. C:\\Scripts\\deploy.bat, calc.exe, or https://portal.company.com")
         self.e_custom_param.setStyleSheet("font-family: 'Consolas'; font-size: 12px;")
-        layout.addWidget(self.e_custom_param)
+        param_row.addWidget(self.e_custom_param, 1)
+
+        self.btn_browse = QtWidgets.QPushButton("📁 Browse File...")
+        self.btn_browse.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        self.btn_browse.setStyleSheet("""
+            QPushButton {
+                background-color: #2D303E;
+                color: #D4AF37;
+                font-weight: bold;
+                font-size: 11px;
+                border-radius: 5px;
+                padding: 6px 14px;
+                border: 1px solid #7D6522;
+            }
+            QPushButton:hover {
+                background-color: #3B3F52;
+                border-color: #D4AF37;
+            }
+        """)
+        self.btn_browse.clicked.connect(self._browse_custom_target)
+        param_row.addWidget(self.btn_browse)
+        layout.addLayout(param_row)
+
+        # Set initial combo selection if editing existing key
+        if self.existing_key:
+            existing_act = self.existing_key.get("action", "")
+            idx = self.cbo_custom_type.findData(existing_act)
+            if idx >= 0:
+                self.cbo_custom_type.setCurrentIndex(idx)
+            elif existing_act == "custom_url" and init_param.lower().endswith(('.bat', '.cmd', '.exe', '.lnk')):
+                self.cbo_custom_type.setCurrentIndex(0)
+
         layout.addStretch()
+
+    def _on_custom_type_changed(self, index):
+        act = self.cbo_custom_type.itemData(index)
+        if act == "launch_app":
+            self.lbl_param.setText("Target Application, Batch Script (.bat), or Executable:")
+            self.e_custom_param.setPlaceholderText("e.g. C:\\Scripts\\run_api.bat, notepad.exe, calc")
+            self.e_custom_param.setEnabled(True)
+            self.btn_browse.setVisible(True)
+        elif act == "custom_url":
+            self.lbl_param.setText("Website URL to open in default browser:")
+            self.e_custom_param.setPlaceholderText("e.g. https://finance.yahoo.com or portal.company.com")
+            self.e_custom_param.setEnabled(True)
+            self.btn_browse.setVisible(False)
+        elif act == "kill_tasks":
+            self.lbl_param.setText("Process Name to Terminate (e.g. excel.exe, chrome.exe):")
+            self.e_custom_param.setPlaceholderText("e.g. excel.exe, acrobat.exe")
+            self.e_custom_param.setEnabled(True)
+            self.btn_browse.setVisible(False)
+        else:
+            self.lbl_param.setText("No parameters needed for this built-in action.")
+            self.e_custom_param.setEnabled(False)
+            self.btn_browse.setVisible(False)
+
+    def _browse_custom_target(self):
+        filePath, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            "Select Application, Batch File, or Script to Launch",
+            "",
+            "Executables & Scripts (*.bat *.cmd *.exe *.lnk *.ps1 *.py *.vbs);;All Files (*.*)"
+        )
+        if filePath:
+            norm_path = os.path.normpath(filePath)
+            self.e_custom_param.setText(norm_path)
+            idx = self.cbo_custom_type.findData("launch_app")
+            if idx >= 0:
+                self.cbo_custom_type.setCurrentIndex(idx)
+
+            # Auto-suggest Title if currently default/blank
+            cur_title = self.e_title.text().strip()
+            if not cur_title or cur_title in ("OFFICER APPROVAL", "NEW KEY", "MY ACTION"):
+                base_name = os.path.splitext(os.path.basename(norm_path))[0]
+                clean_title = base_name.replace("_", " ").replace("-", " ").upper()
+                self.e_title.setText(clean_title)
+
+            # Auto-suggest icon based on extension
+            ext = os.path.splitext(norm_path)[1].lower()
+            if ext in ('.bat', '.cmd', '.ps1'):
+                self.e_icon.setText("⚙️")
+            elif ext in ('.exe', '.lnk'):
+                self.e_icon.setText("🚀")
+            elif ext in ('.py', '.vbs'):
+                self.e_icon.setText("📜")
 
     def _build_shortcuts_tab(self):
         layout = QtWidgets.QVBoxLayout(self.tab_shortcuts)
@@ -383,8 +471,38 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
             # Custom Action
             act_type = self.cbo_custom_type.currentData()
             text_val = self.e_custom_param.text().strip()
-            subtitle = "Custom Action"
-            badge = "Custom"
+            clean_t = text_val.strip('"').strip("'")
+            is_script_or_app = (
+                clean_t.lower().endswith(('.bat', '.cmd', '.exe', '.lnk', '.ps1', '.py', '.vbs', '.msi'))
+                or os.path.exists(clean_t)
+                or (len(clean_t) > 2 and clean_t[1] == ':' and '\\' in clean_t)
+            )
+            if act_type == "launch_app" or (act_type == "custom_url" and is_script_or_app):
+                act_type = "launch_app"
+                if clean_t.lower().endswith(('.bat', '.cmd', '.ps1', '.py', '.vbs')):
+                    subtitle = "Run Script"
+                    badge = "Script"
+                else:
+                    subtitle = "Launch App"
+                    badge = "App"
+            elif act_type == "custom_url":
+                subtitle = "Web Portal"
+                badge = "URL"
+            elif act_type == "kill_tasks":
+                subtitle = "Kill Task"
+                badge = "Rescue"
+            elif act_type == "clean_system":
+                subtitle = "Recycle & Cache"
+                badge = "Purge"
+            elif act_type == "privacy_shield":
+                subtitle = "Boss Key"
+                badge = "Privacy"
+            elif act_type == "toggle_music":
+                subtitle = "Focus Audio"
+                badge = "Music"
+            else:
+                subtitle = "Custom Action"
+                badge = "Custom"
             auto_paste = False
         else:
             # Top 50 Shortcut

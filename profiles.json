@@ -190,6 +190,81 @@
                     "badge": "Area Snip"
                 }
             ]
+        },
+        "coding_setup": {
+            "name": "CODING SETUP",
+            "icon": "👤",
+            "role": "Custom Profile",
+            "keys": [
+                {
+                    "id": "key_clean",
+                    "note": 60,
+                    "note_name": "C4",
+                    "title": "PURGE & CLEAN",
+                    "subtitle": "Recycle Bin & Cache",
+                    "icon": "🧹",
+                    "action": "clean_system",
+                    "badge": "1-Click"
+                },
+                {
+                    "id": "key_snap",
+                    "note": 62,
+                    "note_name": "D4",
+                    "title": "SNAPSHOT",
+                    "subtitle": "Smart Snip & Save",
+                    "icon": "📸",
+                    "action": "screenshot_titled",
+                    "badge": "Smart Snap"
+                },
+                {
+                    "id": "key_run_api",
+                    "note": 60,
+                    "note_name": "C4",
+                    "title": "RUN_API",
+                    "subtitle": "Run API Script",
+                    "icon": "⚡",
+                    "action": "launch_app",
+                    "badge": "Script",
+                    "text": "C:\\Users\\Sahaveer\\PycharmProjects\\AI\\InvestorTimesAI\\run_api.bat",
+                    "auto_paste": false
+                },
+                {
+                    "id": "key_video_editor",
+                    "note": 62,
+                    "note_name": "D4",
+                    "title": "VIDEO EDITOR",
+                    "subtitle": "Run Video Editor",
+                    "icon": "🎬",
+                    "action": "launch_app",
+                    "badge": "Script",
+                    "text": "C:\\Users\\Sahaveer\\PycharmProjects\\AI\\video_editor_ai\\START_VIDEO_EDITOR.bat",
+                    "auto_paste": false
+                },
+                {
+                    "id": "key_amitimes_ota_update",
+                    "note": 64,
+                    "note_name": "E4",
+                    "title": "AMITIMES OTA UPDATE",
+                    "subtitle": "Push OTA Update",
+                    "icon": "🔄",
+                    "action": "launch_app",
+                    "badge": "Script",
+                    "text": "C:\\Users\\Sahaveer\\PycharmProjects\\AI\\amitimes-bridge\\1_PUSH_OTA_UPDATE.bat",
+                    "auto_paste": false
+                },
+                {
+                    "id": "key_amitimes_zip_bundle",
+                    "note": 65,
+                    "note_name": "F4",
+                    "title": "AMITIMES ZIP BUNDLE",
+                    "subtitle": "Create Client ZIP",
+                    "icon": "📦",
+                    "action": "launch_app",
+                    "badge": "Script",
+                    "text": "C:\\Users\\Sahaveer\\PycharmProjects\\AI\\amitimes-bridge\\2_CREATE_CLIENT_ZIP.bat",
+                    "auto_paste": false
+                }
+            ]
         }
     }
 }
