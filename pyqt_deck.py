@@ -699,7 +699,20 @@ class PyQtPianoDeck(QtWidgets.QWidget):
             target_clean = target_expanded.strip('"').strip("'")
             work_dir = os.path.dirname(target_clean) if os.path.exists(target_clean) else None
 
-            # 1. Existing file or batch script on disk (.bat, .cmd, .exe, .lnk, etc.)
+            # 1. Windows Store / UWP apps or Shell Protocols (shell:AppsFolder\..., ms-settings:, etc.)
+            if target_clean.lower().startswith(("shell:", "ms-settings:", "mailto:", "ms-windows-store:")):
+                try:
+                    os.startfile(target_clean)
+                    return
+                except Exception:
+                    pass
+                try:
+                    subprocess.Popen(f'explorer.exe "{target_clean}"', shell=True)
+                    return
+                except Exception as e:
+                    logging.warning(f"Failed to launch shell protocol '{target_clean}': {e}")
+
+            # 2. Existing file or batch script on disk (.bat, .cmd, .exe, .lnk, etc.)
             if os.path.exists(target_clean):
                 if target_clean.lower().endswith(('.bat', '.cmd')):
                     try:
@@ -715,7 +728,14 @@ class PyQtPianoDeck(QtWidgets.QWidget):
                 except Exception as e:
                     logging.warning(f"os.startfile failed for {target_clean}: {e}")
 
-            # 2. Command with arguments or registered system binary (e.g. calc.exe, notepad.exe, etc.)
+            # 3. System binaries / registered app names (calc.exe, notepad.exe, chrome.exe, etc.)
+            try:
+                os.startfile(target_clean)
+                return
+            except Exception:
+                pass
+
+            # 4. Command with arguments or shell command (e.g. code ., python script.py, etc.)
             try:
                 subprocess.Popen(target_expanded, shell=True, cwd=work_dir)
             except Exception as e:

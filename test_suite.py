@@ -66,4 +66,12 @@ deck.deleteLater()
 qt_app.processEvents()
 print('[PASS] 8. PyQtPianoDeck GUI verified with modern Steinway Ivory styling & Profile Switcher')
 
-print('\n*** ALL 8 INTEGRATION TESTS PASSED CLEANLY! ***')
+# Test 9: Installed Applications Discovery & Launcher
+from actions.app_scanner import scan_installed_apps
+scanned_apps = scan_installed_apps()
+assert len(scanned_apps) > 10, f"Expected >10 installed apps, found {len(scanned_apps)}"
+assert any(a['name'] == 'Calculator' for a in scanned_apps), "Calculator should be discovered"
+print(f'[PASS] 9. Installed Apps Scanner verified with {len(scanned_apps)} applications indexed')
+
+print('\n*** ALL 9 INTEGRATION TESTS PASSED CLEANLY! ***')
+

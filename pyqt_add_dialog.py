@@ -2,6 +2,7 @@ import os
 from PyQt6 import QtWidgets, QtCore, QtGui
 import win32clipboard
 from actions.shortcuts import TOP_50_SHORTCUTS
+from actions.app_scanner import scan_installed_apps, pick_icon_for_app
 
 NOTES_PALETTE = [
     (60, "C4"), (62, "D4"), (64, "E4"), (65, "F4"),
@@ -9,13 +10,166 @@ NOTES_PALETTE = [
     (74, "D5"), (76, "E5"), (77, "F5"), (79, "G5")
 ]
 
+
+class InstalledAppsPickerDialog(QtWidgets.QDialog):
+    """
+    Modal search & pick dialog for all installed Windows applications.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.selected_app = None
+        self.setWindowTitle("📦 Select Installed Application")
+        self.setFixedSize(580, 520)
+        self.setWindowFlags(QtCore.Qt.WindowType.Dialog | QtCore.Qt.WindowType.WindowStaysOnTopHint)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #17181D;
+                color: #FFFFFF;
+                font-family: 'Segoe UI';
+            }
+            QLabel { color: #E0E0E0; }
+            QLineEdit, QComboBox {
+                background-color: #242630;
+                color: #FFFFFF;
+                border: 1px solid #3B3E4F;
+                border-radius: 6px;
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            QLineEdit:focus, QComboBox:focus { border: 1px solid #D4AF37; }
+        """)
+        self._build_ui()
+
+    def _build_ui(self):
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(10)
+
+        lbl_head = QtWidgets.QLabel("📦 Choose Application to Launch")
+        lbl_head.setStyleSheet("font-size: 14px; font-weight: bold; color: #D4AF37;")
+        layout.addWidget(lbl_head)
+
+        # Filter bar
+        filter_box = QtWidgets.QHBoxLayout()
+        self.e_search = QtWidgets.QLineEdit()
+        self.e_search.setPlaceholderText("🔍 Filter (e.g. Chrome, Excel, VS Code, Calculator)...")
+        self.e_search.textChanged.connect(self._filter_apps)
+        filter_box.addWidget(self.e_search, 1)
+
+        self.cbo_cat = QtWidgets.QComboBox()
+        self.cbo_cat.addItem("All Categories", "all")
+        self.cbo_cat.addItem("🖥️ System Utilities", "System Utility")
+        self.cbo_cat.addItem("🚀 Desktop Apps", "Desktop Application")
+        self.cbo_cat.addItem("📱 Store Apps", "Windows Store App")
+        self.cbo_cat.currentIndexChanged.connect(lambda: self._filter_apps(self.e_search.text()))
+        filter_box.addWidget(self.cbo_cat)
+        layout.addLayout(filter_box)
+
+        # List
+        self.list_apps = QtWidgets.QListWidget()
+        self.list_apps.setStyleSheet("""
+            QListWidget {
+                background-color: #1A1C24;
+                border: 1px solid #2F3240;
+                border-radius: 6px;
+                padding: 4px;
+            }
+            QListWidget::item {
+                background-color: #222430;
+                border-radius: 4px;
+                padding: 7px 10px;
+                margin-bottom: 2px;
+                color: #E8E8E8;
+            }
+            QListWidget::item:hover { background-color: #2D3040; }
+            QListWidget::item:selected {
+                background-color: #3A3521;
+                border: 1px solid #D4AF37;
+                color: #FFFFFF;
+            }
+        """)
+        self.list_apps.itemDoubleClicked.connect(self._on_double_click)
+        layout.addWidget(self.list_apps, 1)
+
+        # Buttons
+        btn_bar = QtWidgets.QHBoxLayout()
+        btn_cancel = QtWidgets.QPushButton("Cancel")
+        btn_cancel.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        btn_cancel.setStyleSheet("""
+            QPushButton {
+                background-color: #2A2D3A;
+                color: #CCCCCC;
+                border-radius: 5px;
+                padding: 7px 18px;
+                border: none;
+            }
+            QPushButton:hover { background-color: #383C4E; }
+        """)
+        btn_cancel.clicked.connect(self.reject)
+        btn_bar.addWidget(btn_cancel)
+        btn_bar.addStretch()
+
+        btn_select = QtWidgets.QPushButton("Select Application")
+        btn_select.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        btn_select.setStyleSheet("""
+            QPushButton {
+                background-color: #D4AF37;
+                color: #121212;
+                font-weight: bold;
+                border-radius: 5px;
+                padding: 7px 22px;
+                border: none;
+            }
+            QPushButton:hover { background-color: #F3CF65; }
+        """)
+        btn_select.clicked.connect(self._on_select)
+        btn_bar.addWidget(btn_select)
+        layout.addLayout(btn_bar)
+
+        self._populate_apps()
+
+    def _populate_apps(self, query=""):
+        self.list_apps.clear()
+        q = query.lower().strip()
+        selected_cat = self.cbo_cat.currentData() if hasattr(self, 'cbo_cat') else "all"
+
+        apps = scan_installed_apps()
+        for app in apps:
+            if selected_cat != "all" and app["category"] != selected_cat:
+                continue
+            if q and (q not in app["keywords"] and q not in app["name"].lower()):
+                continue
+
+            text = f"{app['icon']}  {app['name']}   [{app['category']}]"
+            item = QtWidgets.QListWidgetItem(text)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, app)
+            item.setToolTip(f"Target: {app['target']}")
+            self.list_apps.addItem(item)
+
+    def _filter_apps(self, text):
+        self._populate_apps(text)
+
+    def _on_double_click(self, item):
+        self.selected_app = item.data(QtCore.Qt.ItemDataRole.UserRole)
+        self.accept()
+
+    def _on_select(self):
+        items = self.list_apps.selectedItems()
+        if items:
+            self.selected_app = items[0].data(QtCore.Qt.ItemDataRole.UserRole)
+            self.accept()
+        else:
+            QtWidgets.QMessageBox.warning(self, "Selection", "Please select an application from the list.")
+
+
 class PyQtAddKeyDialog(QtWidgets.QDialog):
     """
     Modern PyQt6 Piano Key Builder Dialog.
     Ordered by priority:
-      1. 📋 Copied Content (with text bar, 1-click paste button & title)
-      2. 🛠️ Custom Made Key (Web links, app launchers, rescue scripts)
-      3. ⚡ Top 50 Most Used Windows Shortcuts (Win+Shift+S, Win+V, etc.)
+      1. 📋 Copied Text (Snippets, fast paste)
+      2. 📦 Installed Applications (200+ detected apps & tools)
+      3. 🛠️ Custom Action / Script (.bat, .exe, URLs, rescue actions)
+      4. ⚡ Top 50 Most Used Shortcuts (Win+Shift+S, Win+V, etc.)
     """
     def __init__(self, parent, on_save, existing_key=None, key_index=None):
         super().__init__(parent)
@@ -26,8 +180,8 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
         self.setWindowTitle("🎹 Piano Key Builder — Executive Deck")
         screen = QtWidgets.QApplication.screenAt(QtGui.QCursor.pos()) or QtWidgets.QApplication.primaryScreen()
         sh = screen.availableGeometry().height() if screen else 720
-        dialog_h = min(580, sh - 60)
-        self.setFixedSize(650, dialog_h)
+        dialog_h = min(600, sh - 50)
+        self.setFixedSize(680, dialog_h)
         self.setWindowFlags(QtCore.Qt.WindowType.Dialog | QtCore.Qt.WindowType.WindowStaysOnTopHint)
         self.setStyleSheet("""
             QDialog {
@@ -60,10 +214,10 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
                 color: #B0B3C0;
                 font-weight: bold;
                 font-size: 11px;
-                padding: 10px 18px;
+                padding: 10px 14px;
                 border-top-left-radius: 6px;
                 border-top-right-radius: 6px;
-                margin-right: 4px;
+                margin-right: 3px;
             }
             QTabBar::tab:selected {
                 background-color: #1C1E26;
@@ -90,8 +244,8 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
 
     def _build_ui(self):
         main_layout = QtWidgets.QVBoxLayout(self)
-        main_layout.setContentsMargins(22, 18, 22, 18)
-        main_layout.setSpacing(14)
+        main_layout.setContentsMargins(20, 16, 20, 16)
+        main_layout.setSpacing(12)
 
         # Header
         hdr = QtWidgets.QHBoxLayout()
@@ -101,7 +255,7 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
         hdr.addStretch()
         main_layout.addLayout(hdr)
 
-        lbl_desc = QtWidgets.QLabel("Select a category below to configure your 1-click piano button:")
+        lbl_desc = QtWidgets.QLabel("Configure your 1-click piano button from installed apps, snippets, or custom actions:")
         lbl_desc.setStyleSheet("font-size: 11px; color: #9E9E9E;")
         main_layout.addWidget(lbl_desc)
 
@@ -137,22 +291,27 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
         main_layout.addWidget(f_top)
 
         # Tabs for Mode Selection:
-        # Option 1: Copied Content
-        # Option 2: Custom Made Key
-        # Option 3: Top 50 Shortcuts
+        # Tab 0: Copied Content
+        # Tab 1: Installed Applications
+        # Tab 2: Custom Made Key
+        # Tab 3: Top 50 Shortcuts
         self.tabs = QtWidgets.QTabWidget()
 
         self.tab_copied = QtWidgets.QWidget()
         self._build_copied_tab()
-        self.tabs.addTab(self.tab_copied, "1. 📋 Copied Content (Snippet)")
+        self.tabs.addTab(self.tab_copied, "1. 📋 Copied Text")
+
+        self.tab_installed_apps = QtWidgets.QWidget()
+        self._build_installed_apps_tab()
+        self.tabs.addTab(self.tab_installed_apps, "2. 📦 Installed Apps")
 
         self.tab_custom = QtWidgets.QWidget()
         self._build_custom_tab()
-        self.tabs.addTab(self.tab_custom, "2. 🛠️ Custom Made Key")
+        self.tabs.addTab(self.tab_custom, "3. 🛠️ Custom Action")
 
         self.tab_shortcuts = QtWidgets.QWidget()
         self._build_shortcuts_tab()
-        self.tabs.addTab(self.tab_shortcuts, "3. ⚡ Top 50 Shortcuts")
+        self.tabs.addTab(self.tab_shortcuts, "4. ⚡ Shortcuts")
 
         main_layout.addWidget(self.tabs, 1)
 
@@ -161,10 +320,16 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
             act = self.existing_key.get("action", "")
             if act == "paste_text":
                 self.tabs.setCurrentIndex(0)
+            elif act == "launch_app":
+                target = self.existing_key.get("text", "")
+                if target.lower().endswith(('.bat', '.cmd', '.ps1')):
+                    self.tabs.setCurrentIndex(2)  # Custom script tab
+                else:
+                    self.tabs.setCurrentIndex(1)  # Installed Apps tab
             elif act == "shortcut":
-                self.tabs.setCurrentIndex(2)
+                self.tabs.setCurrentIndex(3)
             else:
-                self.tabs.setCurrentIndex(1)
+                self.tabs.setCurrentIndex(2)
         else:
             self.tabs.setCurrentIndex(0)
 
@@ -256,6 +421,121 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
         lbl_hint.setStyleSheet("font-size: 10px; font-style: italic; color: #888888;")
         layout.addWidget(lbl_hint)
 
+    def _build_installed_apps_tab(self):
+        layout = QtWidgets.QVBoxLayout(self.tab_installed_apps)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(8)
+
+        # Filter bar
+        filter_box = QtWidgets.QHBoxLayout()
+        lbl_s = QtWidgets.QLabel("🔍 Search Apps:")
+        lbl_s.setStyleSheet("font-size: 11px; font-weight: bold; color: #D4AF37;")
+        filter_box.addWidget(lbl_s)
+
+        self.e_app_search = QtWidgets.QLineEdit()
+        self.e_app_search.setPlaceholderText("Filter apps (e.g. Chrome, Excel, VS Code, Calculator, PyCharm)...")
+        self.e_app_search.textChanged.connect(self._filter_installed_apps)
+        filter_box.addWidget(self.e_app_search, 1)
+
+        self.cbo_app_cat = QtWidgets.QComboBox()
+        self.cbo_app_cat.addItem("All Categories", "all")
+        self.cbo_app_cat.addItem("🖥️ System Utilities", "System Utility")
+        self.cbo_app_cat.addItem("🚀 Desktop Apps", "Desktop Application")
+        self.cbo_app_cat.addItem("📱 Store Apps", "Windows Store App")
+        self.cbo_app_cat.currentIndexChanged.connect(lambda: self._filter_installed_apps(self.e_app_search.text()))
+        filter_box.addWidget(self.cbo_app_cat)
+
+        btn_refresh = QtWidgets.QPushButton("🔄 Refresh")
+        btn_refresh.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        btn_refresh.setStyleSheet("""
+            QPushButton {
+                background-color: #2D303E;
+                color: #B0B3C0;
+                font-size: 11px;
+                border-radius: 4px;
+                padding: 6px 10px;
+                border: 1px solid #3B3E4F;
+            }
+            QPushButton:hover {
+                background-color: #3B3F52;
+                color: #FFFFFF;
+            }
+        """)
+        btn_refresh.clicked.connect(self._refresh_apps)
+        filter_box.addWidget(btn_refresh)
+        layout.addLayout(filter_box)
+
+        # List Widget
+        self.list_installed_apps = QtWidgets.QListWidget()
+        self.list_installed_apps.setStyleSheet("""
+            QListWidget {
+                background-color: #17181F;
+                border: 1px solid #2F3240;
+                border-radius: 6px;
+                padding: 4px;
+            }
+            QListWidget::item {
+                background-color: #21232D;
+                border-radius: 4px;
+                padding: 8px 10px;
+                margin-bottom: 3px;
+                color: #E8E8E8;
+            }
+            QListWidget::item:hover {
+                background-color: #2C2F3D;
+            }
+            QListWidget::item:selected {
+                background-color: #3A3521;
+                border: 1px solid #D4AF37;
+                color: #FFFFFF;
+            }
+        """)
+        self.list_installed_apps.itemClicked.connect(self._on_app_selected)
+        self.list_installed_apps.itemDoubleClicked.connect(self._on_app_double_clicked)
+        layout.addWidget(self.list_installed_apps, 1)
+
+        lbl_hint = QtWidgets.QLabel("💡 Tip: Click any app to preview title/icon, or double-click to immediately save it to your piano deck.")
+        lbl_hint.setStyleSheet("font-size: 10px; font-style: italic; color: #888888;")
+        layout.addWidget(lbl_hint)
+
+        self._populate_installed_apps()
+
+    def _populate_installed_apps(self, query=""):
+        self.list_installed_apps.clear()
+        q = query.lower().strip()
+        selected_cat = self.cbo_app_cat.currentData() if hasattr(self, 'cbo_app_cat') else "all"
+
+        apps = scan_installed_apps()
+        for app in apps:
+            if selected_cat != "all" and app["category"] != selected_cat:
+                continue
+            if q and (q not in app["keywords"] and q not in app["name"].lower()):
+                continue
+
+            text = f"{app['icon']}  {app['name']}   [{app['category']}]"
+            item = QtWidgets.QListWidgetItem(text)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, app)
+            item.setToolTip(f"Target: {app['target']}")
+            self.list_installed_apps.addItem(item)
+
+    def _filter_installed_apps(self, text):
+        self._populate_installed_apps(text)
+
+    def _refresh_apps(self):
+        scan_installed_apps(force_refresh=True)
+        self._populate_installed_apps(self.e_app_search.text())
+
+    def _on_app_selected(self, item):
+        app = item.data(QtCore.Qt.ItemDataRole.UserRole)
+        if app:
+            clean_name = app["name"].replace("_", " ").replace("-", " ").strip()
+            self.e_title.setText(clean_name.upper())
+            self.e_icon.setText(app["icon"])
+
+    def _on_app_double_clicked(self, item):
+        self._on_app_selected(item)
+        self._save_key()
+
     def _build_custom_tab(self):
         layout = QtWidgets.QVBoxLayout(self.tab_custom)
         layout.setContentsMargins(16, 14, 16, 14)
@@ -290,6 +570,26 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
         self.e_custom_param.setStyleSheet("font-family: 'Consolas'; font-size: 12px;")
         param_row.addWidget(self.e_custom_param, 1)
 
+        self.btn_pick_app = QtWidgets.QPushButton("📦 Installed Apps...")
+        self.btn_pick_app.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        self.btn_pick_app.setStyleSheet("""
+            QPushButton {
+                background-color: #2D303E;
+                color: #D4AF37;
+                font-weight: bold;
+                font-size: 11px;
+                border-radius: 5px;
+                padding: 6px 12px;
+                border: 1px solid #7D6522;
+            }
+            QPushButton:hover {
+                background-color: #3B3F52;
+                border-color: #D4AF37;
+            }
+        """)
+        self.btn_pick_app.clicked.connect(self._pick_installed_app_for_custom)
+        param_row.addWidget(self.btn_pick_app)
+
         self.btn_browse = QtWidgets.QPushButton("📁 Browse File...")
         self.btn_browse.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         self.btn_browse.setStyleSheet("""
@@ -299,7 +599,7 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
                 font-weight: bold;
                 font-size: 11px;
                 border-radius: 5px;
-                padding: 6px 14px;
+                padding: 6px 12px;
                 border: 1px solid #7D6522;
             }
             QPushButton:hover {
@@ -328,21 +628,41 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
             self.lbl_param.setText("Target Application, Batch Script (.bat), or Executable:")
             self.e_custom_param.setPlaceholderText("e.g. C:\\Scripts\\run_api.bat, notepad.exe, calc")
             self.e_custom_param.setEnabled(True)
+            self.btn_pick_app.setVisible(True)
             self.btn_browse.setVisible(True)
         elif act == "custom_url":
             self.lbl_param.setText("Website URL to open in default browser:")
             self.e_custom_param.setPlaceholderText("e.g. https://finance.yahoo.com or portal.company.com")
             self.e_custom_param.setEnabled(True)
+            self.btn_pick_app.setVisible(False)
             self.btn_browse.setVisible(False)
         elif act == "kill_tasks":
             self.lbl_param.setText("Process Name to Terminate (e.g. excel.exe, chrome.exe):")
             self.e_custom_param.setPlaceholderText("e.g. excel.exe, acrobat.exe")
             self.e_custom_param.setEnabled(True)
+            self.btn_pick_app.setVisible(False)
             self.btn_browse.setVisible(False)
         else:
             self.lbl_param.setText("No parameters needed for this built-in action.")
             self.e_custom_param.setEnabled(False)
+            self.btn_pick_app.setVisible(False)
             self.btn_browse.setVisible(False)
+
+    def _pick_installed_app_for_custom(self):
+        dlg = InstalledAppsPickerDialog(self)
+        if dlg.exec() == QtWidgets.QDialog.DialogCode.Accepted and dlg.selected_app:
+            app = dlg.selected_app
+            self.e_custom_param.setText(app["target"])
+            idx = self.cbo_custom_type.findData("launch_app")
+            if idx >= 0:
+                self.cbo_custom_type.setCurrentIndex(idx)
+
+            cur_title = self.e_title.text().strip()
+            if not cur_title or cur_title in ("OFFICER APPROVAL", "NEW KEY", "MY ACTION"):
+                clean_name = app["name"].replace("_", " ").replace("-", " ").strip()
+                self.e_title.setText(clean_name.upper())
+
+            self.e_icon.setText(app["icon"])
 
     def _browse_custom_target(self):
         filePath, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -461,14 +781,34 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
         n_num, n_name = NOTES_PALETTE[idx % len(NOTES_PALETTE)]
 
         if current_tab_idx == 0:
-            # Copied Content
+            # 1. Copied Content
             act_type = "paste_text"
             text_val = self.txt_copied.toPlainText().strip()
             subtitle = "Text Snippet"
             badge = "Snippet"
             auto_paste = self.chk_auto_paste.isChecked()
         elif current_tab_idx == 1:
-            # Custom Action
+            # 2. Installed Applications
+            selected_items = self.list_installed_apps.selectedItems()
+            if not selected_items:
+                QtWidgets.QMessageBox.warning(self, "Validation", "Please select an installed application from the list.")
+                return
+            app_info = selected_items[0].data(QtCore.Qt.ItemDataRole.UserRole)
+            act_type = "launch_app"
+            text_val = app_info["target"]
+            subtitle = "Launch App"
+            badge = "App"
+            auto_paste = False
+            # ensure title/icon are set
+            if not self.e_title.text().strip() or self.e_title.text().strip() in ("OFFICER APPROVAL", "NEW KEY", "MY ACTION"):
+                clean_name = app_info["name"].replace("_", " ").replace("-", " ").strip()
+                title = clean_name.upper()
+                self.e_title.setText(title)
+            if not self.e_icon.text().strip() or self.e_icon.text().strip() == "📋":
+                icon = app_info["icon"]
+                self.e_icon.setText(icon)
+        elif current_tab_idx == 2:
+            # 3. Custom Action
             act_type = self.cbo_custom_type.currentData()
             text_val = self.e_custom_param.text().strip()
             clean_t = text_val.strip('"').strip("'")
@@ -476,6 +816,7 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
                 clean_t.lower().endswith(('.bat', '.cmd', '.exe', '.lnk', '.ps1', '.py', '.vbs', '.msi'))
                 or os.path.exists(clean_t)
                 or (len(clean_t) > 2 and clean_t[1] == ':' and '\\' in clean_t)
+                or clean_t.lower().startswith(('shell:', 'ms-settings:'))
             )
             if act_type == "launch_app" or (act_type == "custom_url" and is_script_or_app):
                 act_type = "launch_app"
@@ -505,7 +846,7 @@ class PyQtAddKeyDialog(QtWidgets.QDialog):
                 badge = "Custom"
             auto_paste = False
         else:
-            # Top 50 Shortcut
+            # 4. Top 50 Shortcut
             selected_items = self.list_shortcuts.selectedItems()
             if not selected_items:
                 QtWidgets.QMessageBox.warning(self, "Validation", "Please select a shortcut from the list.")
